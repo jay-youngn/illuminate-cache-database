@@ -346,7 +346,7 @@ class RedisHash
             $this->key,
             $this->formatValues(
                 $data,
-                $this->getExpireFromMinutes($repository->ttl()),
+                $this->toExpiredTime($repository->ttl()),
                 $repository->version()
             )
         );
@@ -378,18 +378,14 @@ class RedisHash
     }
 
     /**
-     * Convert TTL minutes to expired timestamps.
+     * Convert TTL seconds to expired timestamps.
      *
-     * @param   int  $minutes
+     * @param   int  $seconds
      * @return  int
      */
-    protected function getExpireFromMinutes(int $minutes): int
+    protected function toExpiredTime(int $seconds): int
     {
-        if ($minutes) {
-            $minutes = time() + 60 * $minutes;
-        }
-
-        return $minutes;
+        return time() + $seconds;
     }
 
     /**

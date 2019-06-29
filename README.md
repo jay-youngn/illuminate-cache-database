@@ -88,7 +88,8 @@ return [
 ```php
 <?php
 
-RedisHashQuery::from('group1', 'users')->get([1, 2, 3]);
+// Data from redis hash table: "hash-database:users"
+RedisHashQuery::table('users')->get([1, 2, 3]);
 // dump
 [
     1 => [
@@ -103,5 +104,11 @@ RedisHashQuery::from('group1', 'users')->get([1, 2, 3]);
     3 => null,
 ];
 
-// Data saved for 60 minutes into redis hash table: "hash-database:users:group1"
+
+// Data from redis hash table: "hash-database:users:someGroupTag"
+RedisHashQuery::from('someGroupTag', 'users')->find(9);
+[
+    'id' => 9,
+    'username' => '999',
+];
 ```

@@ -21,7 +21,7 @@ interface RedisHashRepository
     public function fetch(string $group, array $ids): array;
 
     /**
-     * TTL (minutes).
+     * TTL (seconds).
      *
      * @return  int
      */
