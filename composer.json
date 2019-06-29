@@ -1,0 +1,34 @@
+{
+    "name": "ginnerpeace/illuminate-cache-database",
+    "homepage": "https://github.com/ginnerpeace/illuminate-cache-database",
+    "description": "Cache-based data query.",
+    "keywords": ["Redis", "Cache Database", "Best Practices"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "gjy",
+            "email": "ginnerpeace@live.com",
+            "role": "Master"
+        }
+    ],
+    "require": {
+        "php": "7.1.*",
+        "illuminate/support": "^5.4",
+        "predis/predis": "~1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Zeigo\\Illuminate\\CacheDatabase\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Zeigo\\Illuminate\\CacheDatabase\\RedisHashProvider"
+            ],
+            "aliases": {
+                "RedisHashQuery": "Zeigo\\Illuminate\\CacheDatabase\\Facades\\RedisHashQuery"
+            }
+        }
+    }
+}
