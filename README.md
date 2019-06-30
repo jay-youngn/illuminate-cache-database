@@ -12,7 +12,11 @@
 ### Install
 > Using composer.
 ```bash
-composer require ginnerpeace/illuminate-cache-database
+# Laravel/Lumen < 5.4
+composer require "ginnerpeace/illuminate-cache-database:~1.0"
+
+# Laravel/Lumen >= 5.4
+composer require "ginnerpeace/illuminate-cache-database:~2.0"
 ```
 
 ### Add service provider to config.
@@ -52,7 +56,7 @@ return [
 $app->register(Zeigo\Illuminate\CacheDatabase\LumenRedisHashProvider::class);
 ```
 
-### Publish resources
+### Publish resources (laravel only)
 > Copied config to `config/hash-database.php`.
 ```bash
 php artisan vendor:publish --provider="Zeigo\Illuminate\CacheDatabase\RedisHashProvider"
