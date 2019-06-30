@@ -26,7 +26,7 @@ class RedisHashProvider extends ServiceProvider
             $config = $app['config']['hash-database'];
 
             return (new RedisHash(
-                $app['redis']->connection($config['connection'])->client(),
+                $app['redis']->connection($config['connection']),
                 $config['prefix']
             ))->fill($config['repositories']);
         });
