@@ -10,8 +10,8 @@ interface CacheForever
     /**
      * Get all data.
      *
-     * @param   string  $group
+     * @param   string|null  $group
      * @return  array
      */
-    public function all(string $group): array;
+    public function all(string $group = null): array;
 }

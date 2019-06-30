@@ -7,6 +7,5 @@ return [
     'connection' => 'cache',
     'prefix' => 'hash-database',
     'repositories' => [
-        'users' => Users::class,
     ],
 ];

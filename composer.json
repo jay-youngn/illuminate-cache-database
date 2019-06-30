@@ -12,7 +12,7 @@
         }
     ],
     "require": {
-        "php": "7.1.*",
+        "php": "^7.1",
         "illuminate/support": "^5.4",
         "predis/predis": "~1.0"
     },

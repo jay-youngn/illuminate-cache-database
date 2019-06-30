@@ -318,7 +318,7 @@ class RedisHash
      */
     private function fetch(RedisHashRepository $repository, array $ids, bool $save = true): array
     {
-        $result = $repository->fetch($this->group, $ids);
+        $result = $repository->fetch($ids, $this->group);
 
         if (empty($result)) {
             return [];

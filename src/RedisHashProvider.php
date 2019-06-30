@@ -8,28 +8,17 @@ use Zeigo\Illuminate\CacheDatabase\Processor\RedisHash;
 class RedisHashProvider extends ServiceProvider
 {
     /**
-     * Defer load.
-     *
-     * @var  boolean
-     */
-    protected $defer = true;
-
-    /**
-     * Bootstrap any application services.
-     *
-     * @return void
+     * {@inheritdoc}
      */
     public function boot()
     {
         $this->publishes([
-            __DIR__ . '/Resources/hash-database.config.php' => config_path('hash-database.php'),
+            __DIR__ . '/Resources/hash-database.php' => config_path('hash-database.php'),
         ], 'config');
     }
 
     /**
-     * Register the application services.
-     *
-     * @return void
+     * {@inheritdoc}
      */
     public function register()
     {
@@ -44,9 +33,15 @@ class RedisHashProvider extends ServiceProvider
     }
 
     /**
-     * Get the services provided by the provider.
-     *
-     * @return array
+     * {@inheritdoc}
+     */
+    public function isDeferred()
+    {
+        return true;
+    }
+
+    /**
+     * {@inheritdoc}
      */
     public function provides()
     {

@@ -14,11 +14,11 @@ interface RedisHashRepository
     /**
      * Get data.
      *
-     * @param   string  $group
      * @param   array  $ids
+     * @param   string|null  $group
      * @return  array
      */
-    public function fetch(string $group, array $ids): array;
+    public function fetch(array $ids, string $group = null): array;
 
     /**
      * TTL (seconds).
