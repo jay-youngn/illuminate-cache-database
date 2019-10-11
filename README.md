@@ -11,17 +11,15 @@
 
 ### Install
 > Using composer.
-```bash
-# Laravel/Lumen < 5.4
-composer require "ginnerpeace/illuminate-cache-database:~1.0"
 
-# Laravel/Lumen >= 5.4
-composer require "ginnerpeace/illuminate-cache-database:~2.0"
+```bash
+composer require "ginnerpeace/illuminate-cache-database:~2.1"
 ```
 
 ### Add service provider to config.
 
 > Normally.
+
 ```php
 <?php
 return [
@@ -40,7 +38,8 @@ return [
 ```
 
 > After Laravel 5.5, the package auto-discovery is supported.
-```javascript
+
+```json
 {
     "providers": [
         "Zeigo\\Illuminate\\CacheDatabase\\RedisHashProvider"
@@ -52,18 +51,21 @@ return [
 ```
 
 > Lumen
+
 ```php
 $app->register(Zeigo\Illuminate\CacheDatabase\LumenRedisHashProvider::class);
 ```
 
 ### Publish resources (laravel only)
 > Copied config to `config/hash-database.php`.
+
 ```bash
 php artisan vendor:publish --provider="Zeigo\Illuminate\CacheDatabase\RedisHashProvider"
 ```
 
 ### Create repository
 > Defined a class, implements basic interface and write some query.
+
 ```php
 <?php
 
@@ -104,6 +106,7 @@ class Users implements RedisHashRepository
 
 ### Appends useable repository to config
 > Mapping Custom repositories in `config/hash-database.php`.
+
 ```php
 return [
     'connection' => 'cache',
@@ -116,6 +119,7 @@ return [
 
 ## Enjoy
 > Result will save to redis hash table, TTL depending on `RedisHashRepository::ttl()` method returned.
+
 ```php
 // Data from redis hash table: "hash-database:users"
 RedisHashQuery::table('users')->get([1, 2, 3]);
