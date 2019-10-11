@@ -247,19 +247,27 @@ class RedisHash
      */
     public function all(): array
     {
-        if (self::$client->get($this->key . ':forever')) {
-            return array_map(function ($item) {
-                $data = json_decode($item, true);
-                return $data['value'] ?? null;
-            }, self::$client->hgetall($this->key));
-        }
-
         $repository = $this->resolveRepository();
 
         // can not cache all
         if (! $repository instanceof CacheForever) {
             // todo
             return [];
+        }
+
+        if (self::$client->get($this->key . ':forever')) {
+            $deletedIds = self::$client->smembers($this->key . ':deleted');
+
+            if (! empty($deletedIds)) {
+                // refetch && save
+                $this->fetch($repository, $deletedIds, true);
+                self::$client->srem($this->key . ':deleted', $deletedIds);
+            }
+
+            return array_map(function ($item) {
+                $data = json_decode($item, true);
+                return $data['value'] ?? null;
+            }, self::$client->hgetall($this->key));
         }
 
         $result = $repository->all($this->group);
@@ -290,9 +298,7 @@ class RedisHash
 
         $result = self::$client->hdel($this->key, $ids);
 
-        // todo
-        // recache maybe is better?
-        $this->clearForeverTag();
+        self::$client->sadd($this->key . ':deleted', $ids);
 
         return $result;
     }
@@ -395,9 +401,8 @@ class RedisHash
      */
     private function clearForeverTag()
     {
-        if (self::$client->exists($this->key . ':forever')) {
-            self::$client->del($this->key . ':forever');
-        }
+        self::$client->del($this->key . ':forever');
+        self::$client->del($this->key . ':deleted');
     }
 
     /**
