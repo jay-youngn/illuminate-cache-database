@@ -25,8 +25,14 @@ class RedisHashProvider extends ServiceProvider
         $this->app->singleton(RedisHash::class, function($app) {
             $config = $app['config']['hash-database'];
 
+            if ($this->versionCompare('5.4', '>=')) {
+                $predisClient = $app['redis']->connection($config['connection'])->client();
+            } else {
+                $predisClient = $app['redis']->connection($config['connection']);
+            }
+
             return (new RedisHash(
-                $app['redis']->connection($config['connection'])->client(),
+                $predisClient,
                 $config['prefix']
             ))->fill($config['repositories']);
         });
@@ -48,5 +54,18 @@ class RedisHashProvider extends ServiceProvider
         return [
             RedisHash::class,
         ];
+    }
+
+    /**
+     * Compare illuminate component version.
+     *     - illuminate/redis 5.4 has a big upgrade.
+     *
+     * @param string $compareVersion
+     * @param string $operator
+     * @return bool|null
+     */
+    protected function versionCompare(string $compareVersion, string $operator)
+    {
+        return version_compare($this->app->version(), $compareVersion, $operator);
     }
 }
