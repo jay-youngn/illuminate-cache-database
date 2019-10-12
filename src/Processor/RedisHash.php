@@ -19,40 +19,40 @@ class RedisHash
      *
      * @var string
      */
-    const VERSION = '1.0';
+    const VERSION = '2.1.1';
 
     /**
      * Redis key.
      *
-     * @var  string
+     * @var string
      */
     private $key;
 
     /**
      * Data sharding.
      *
-     * @var  string
+     * @var string
      */
     private $group;
 
     /**
      * Table name.
      *
-     * @var  string
+     * @var string
      */
     private $table;
 
     /**
      * Predis client instance.
      *
-     * @var  Predis\ClientInterface
+     * @var Predis\ClientInterface
      */
     private static $client;
 
     /**
      * Redis key prefix.
      *
-     * @var  string
+     * @var string
      */
     private static $prefix;
 
@@ -73,8 +73,8 @@ class RedisHash
     /**
      * __construct
      *
-     * @param   Predis\ClientInterface  $client
-     * @param   string  $prefix
+     * @param Predis\ClientInterface $client
+     * @param string $prefix
      */
     public function __construct(ClientInterface $client, string $prefix)
     {
@@ -85,9 +85,9 @@ class RedisHash
     /**
      * Register a repository with the table.
      *
-     * @param   string  $table
-     * @param   string|Closure  $class
-     * @return  void
+     * @param string $table
+     * @param string|Closure $class
+     * @return void
      */
     public function register(string $table, $class)
     {
@@ -97,8 +97,8 @@ class RedisHash
     /**
      * Mass register repositories.
      *
-     * @param   array  $repositories
-     * @return  static
+     * @param array $repositories
+     * @return static
      */
     public function fill(array $repositories): self
     {
@@ -110,8 +110,8 @@ class RedisHash
     /**
      * Get current registered repositories.
      *
-     * @param   string  $table
-     * @return  array
+     * @param string $table
+     * @return array
      */
     public function getRepositories(): array
     {
@@ -121,8 +121,8 @@ class RedisHash
     /**
      * Determine if the given table is registered in pool.
      *
-     * @param   string  $table
-     * @return  bool
+     * @param string $table
+     * @return bool
      */
     public function isRegistered(string $table): bool
     {
@@ -132,11 +132,11 @@ class RedisHash
     /**
      * Initialize a new instance for query.
      *
-     * @param   string  $group
-     * @param   string  $table
-     * @return  static  (cloned)
+     * @param string $group
+     * @param string $table
+     * @return static (cloned)
      *
-     * @throws  BadMethodCallException
+     * @throws BadMethodCallException
      */
     public function from(string $group, string $table): self
     {
@@ -160,10 +160,10 @@ class RedisHash
     /**
      * Initialize a new instance for non group query.
      *
-     * @param   string  $table
-     * @return  static  (cloned)
+     * @param string $table
+     * @return static (cloned)
      *
-     * @throws  BadMethodCallException
+     * @throws BadMethodCallException
      */
     public function table(string $table): self
     {
@@ -173,9 +173,9 @@ class RedisHash
     /**
      * Find a data by its id.
      *
-     * @param   mixed  $id
-     * @param   array|null  $default
-     * @return  array|null
+     * @param mixed $id
+     * @param array|null $default
+     * @return array|null
      */
     public function find($id, array $default = null): ?array
     {
@@ -185,8 +185,8 @@ class RedisHash
     /**
      * Find multiple datas by their ids.
      *
-     * @param   array  $ids
-     * @return  array
+     * @param array $ids
+     * @return array
      */
     public function get(array $ids): array
     {
@@ -243,7 +243,7 @@ class RedisHash
     /**
      * Get all data from hash table if allow the repository all cached.
      *
-     * @return  array
+     * @return array
      */
     public function all(): array
     {
@@ -287,8 +287,8 @@ class RedisHash
     /**
      * Delete multiple domains in hash table.
      *
-     * @param   mixed  $ids
-     * @return  int
+     * @param mixed $ids
+     * @return int
      */
     public function delete($ids)
     {
@@ -306,7 +306,7 @@ class RedisHash
     /**
      * Remove all datas.
      *
-     * @return  int
+     * @return int
      */
     public function clear()
     {
@@ -317,7 +317,7 @@ class RedisHash
     /**
      * Clear forever tag.
      *
-     * @return  void
+     * @return void
      */
     public function clearForeverTag()
     {
@@ -332,10 +332,10 @@ class RedisHash
     /**
      * Fetch origin data from repository.
      *
-     * @param   RedisHashRepository  $repository
-     * @param   array  $ids
-     * @param   bool  $save
-     * @return  array
+     * @param RedisHashRepository $repository
+     * @param array $ids
+     * @param bool $save
+     * @return array
      */
     private function fetch(RedisHashRepository $repository, array $ids, bool $save = true): array
     {
@@ -353,9 +353,9 @@ class RedisHash
     /**
      * Save data into hash table.
      *
-     * @param   RedisHashRepository  $repository
-     * @param   array  $data
-     * @return  bool
+     * @param RedisHashRepository $repository
+     * @param array $data
+     * @return bool
      */
     private function save(RedisHashRepository $repository, array $data): bool
     {
@@ -378,10 +378,10 @@ class RedisHash
     /**
      * Format data before save.
      *
-     * @param   array  $collect
-     * @param   int  $expire
-     * @param   string  $version
-     * @return  array
+     * @param array $collect
+     * @param int $expire
+     * @param string $version
+     * @return array
      */
     protected function formatValues(array $collect, int $expire, string $version): array
     {
@@ -401,8 +401,8 @@ class RedisHash
     /**
      * Convert TTL seconds to expired timestamps.
      *
-     * @param   int  $seconds
-     * @return  int
+     * @param int $seconds
+     * @return int
      */
     protected function toExpiredTime(int $seconds): int
     {
@@ -412,9 +412,9 @@ class RedisHash
     /**
      * Get hash table key.
      *
-     * @param   string  $group
-     * @param   string  $table
-     * @return  string
+     * @param string $group
+     * @param string $table
+     * @return string
      */
     private function resolveKey(string $group, string $table): string
     {
@@ -424,7 +424,7 @@ class RedisHash
     /**
      * Get repository instance.
      *
-     * @return  RedisHashRepository
+     * @return RedisHashRepository
      */
     private function resolveRepository(): RedisHashRepository
     {
@@ -444,7 +444,7 @@ class RedisHash
     /**
      * Show component version.
      *
-     * @return  string
+     * @return string
      */
     public function version(): string
     {
