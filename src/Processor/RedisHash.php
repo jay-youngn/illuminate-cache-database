@@ -315,6 +315,21 @@ class RedisHash
     }
 
     /**
+     * Clear forever tag.
+     *
+     * @return  void
+     */
+    public function clearForeverTag()
+    {
+        if (! $this->resolveRepository() instanceof CacheForever) {
+            return;
+        }
+
+        self::$client->del($this->key . ':forever');
+        self::$client->del($this->key . ':deleted');
+    }
+
+    /**
      * Fetch origin data from repository.
      *
      * @param   RedisHashRepository  $repository
@@ -392,17 +407,6 @@ class RedisHash
     protected function toExpiredTime(int $seconds): int
     {
         return time() + $seconds;
-    }
-
-    /**
-     * Clear forever tag.
-     *
-     * @return  void
-     */
-    private function clearForeverTag()
-    {
-        self::$client->del($this->key . ':forever');
-        self::$client->del($this->key . ':deleted');
     }
 
     /**
