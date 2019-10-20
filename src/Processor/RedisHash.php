@@ -2,7 +2,6 @@
 
 namespace Zeigo\Illuminate\CacheDatabase\Processor;
 
-use Closure;
 use BadMethodCallException;
 use Illuminate\Support\Arr;
 use Predis\ClientInterface;
@@ -431,10 +430,8 @@ class RedisHash
         if (! isset(self::$repositoryInstances[$this->table])) {
             if (is_string(self::$repositoryBindings[$this->table])) {
                 self::$repositoryInstances[$this->table] = new self::$repositoryBindings[$this->table];
-            } elseif (self::$repositoryBindings[$this->table] instanceof Closure) {
-                self::$repositoryInstances[$this->table] = self::$repositoryBindings[$this->table]();
             } else {
-                self::$repositoryInstances[$this->table] = self::$repositoryBindings[$this->table];
+                self::$repositoryInstances[$this->table] = value(self::$repositoryBindings[$this->table]);
             }
         }
 
