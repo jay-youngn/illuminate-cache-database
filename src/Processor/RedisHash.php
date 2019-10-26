@@ -195,6 +195,12 @@ class RedisHash
             return $result;
         }
 
+        /**
+         * Data repository.
+         * @var RedisHashRepository
+         */
+        $repository = $this->resolveRepository();
+
         $cache = self::$client->hmget($this->key, $ids);
 
         // timestamp for determine expired data.
@@ -203,14 +209,7 @@ class RedisHash
         // those data needs fetch newest.
         $needFetch = [];
 
-        /**
-         * data repository.
-         *
-         * @var RedisHashRepository
-         */
-        $repository = $this->resolveRepository();
-
-        // for in order returns.
+        // be used for ordered returns.
         $i = 0;
 
         foreach ($ids as $id) {
@@ -446,6 +445,14 @@ class RedisHash
     public function version(): string
     {
         return static::VERSION;
+    }
+
+    public function __clone()
+    {
+        // do not keep modified properties.
+        $this->key = null;
+        $this->group = null;
+        $this->table = null;
     }
 
     public function __toString()
