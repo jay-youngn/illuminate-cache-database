@@ -9,7 +9,7 @@ use Zeigo\Illuminate\CacheDatabase\Contracts\CacheForever;
 use Zeigo\Illuminate\CacheDatabase\Contracts\RedisHashRepository;
 
 /**
- * Cache database: Redis hash.
+ * Redis hash stored.
  */
 class RedisHash
 {
@@ -18,7 +18,7 @@ class RedisHash
      *
      * @var string
      */
-    const VERSION = '2.1.1';
+    const VERSION = '2.1.2';
 
     /**
      * Redis key.
@@ -201,7 +201,7 @@ class RedisHash
          */
         $repository = $this->resolveRepository();
 
-        $cache = self::$client->hmget($this->key, $ids);
+        $values = self::$client->hmget($this->key, $ids);
 
         // timestamp for determine expired data.
         $time = time();
@@ -214,8 +214,8 @@ class RedisHash
 
         foreach ($ids as $id) {
             if (
-                ! empty($cache[$i])
-                && ($data = json_decode($cache[$i], true))
+                ! empty($values[$i])
+                && ($data = json_decode($values[$i], true))
                 && ! empty($data['value'])
                 && (! empty($data['version']) && $data['version'] === $repository->version())
                 && (empty($data['expire']) || $data['expire'] > $time)
@@ -247,10 +247,8 @@ class RedisHash
     {
         $repository = $this->resolveRepository();
 
-        // can not cache all
         if (! $repository instanceof CacheForever) {
-            // todo
-            return [];
+            throw new BadMethodCallException('You must implement Zeigo\Illuminate\CacheDatabase\Contracts\CacheForever before calling "all"');
         }
 
         if (self::$client->get($this->key . ':forever')) {
@@ -271,9 +269,10 @@ class RedisHash
         $result = $repository->all($this->group);
 
         if ($this->save($repository, $result)) {
-            // set forever tag
             if ($repository->ttl()) {
-                self::$client->set($this->key . ':forever', time(), 'EX', ($repository->ttl() * 60) - 60);
+                // Let this tag expire 10 seconds early when repository has TTL.
+                // So that cached data is always timely.
+                self::$client->set($this->key . ':forever', time(), 'EX', max(1, $repository->ttl() - 10));
             } else {
                 self::$client->set($this->key . ':forever', time());
             }
@@ -286,7 +285,7 @@ class RedisHash
      * Delete multiple domains in hash table.
      *
      * @param mixed $ids
-     * @return int
+     * @return void
      */
     public function delete($ids)
     {
@@ -294,22 +293,24 @@ class RedisHash
             $ids = [$ids];
         }
 
-        $result = self::$client->hdel($this->key, $ids);
-
-        self::$client->sadd($this->key . ':deleted', $ids);
-
-        return $result;
+        self::$client->transaction(function ($multiExec) use ($ids) {
+            $multiExec->hdel($this->key, $ids);
+            $multiExec->sadd($this->key . ':deleted', $ids);
+        });
     }
 
     /**
      * Remove all datas.
      *
-     * @return int
+     * @return void
      */
     public function clear()
     {
-        $this->clearForeverTag();
-        return self::$client->del($this->key);
+        self::$client->transaction(function ($multiExec) {
+            $multiExec->del($this->key . ':forever');
+            $multiExec->del($this->key . ':deleted');
+            $multiExec->del($this->key);
+        });
     }
 
     /**
@@ -323,8 +324,10 @@ class RedisHash
             return;
         }
 
-        self::$client->del($this->key . ':forever');
-        self::$client->del($this->key . ':deleted');
+        self::$client->transaction(function ($multiExec) {
+            $multiExec->del($this->key . ':forever');
+            $multiExec->del($this->key . ':deleted');
+        });
     }
 
     /**
