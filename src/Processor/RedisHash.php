@@ -189,6 +189,8 @@ class RedisHash
      */
     public function get(array $ids): array
     {
+        $this->abortIfNoProperties();
+
         $result = [];
 
         if (empty($ids)) {
@@ -245,6 +247,8 @@ class RedisHash
      */
     public function all(): array
     {
+        $this->abortIfNoProperties();
+
         $repository = $this->resolveRepository();
 
         if (! $repository instanceof CacheForever) {
@@ -289,6 +293,8 @@ class RedisHash
      */
     public function delete($ids)
     {
+        $this->abortIfNoProperties();
+
         if (! is_array($ids)) {
             $ids = [$ids];
         }
@@ -306,6 +312,8 @@ class RedisHash
      */
     public function clear()
     {
+        $this->abortIfNoProperties();
+
         self::$client->transaction(function ($multiExec) {
             $multiExec->del($this->key . ':forever');
             $multiExec->del($this->key . ':deleted');
@@ -320,14 +328,78 @@ class RedisHash
      */
     public function clearForeverTag()
     {
+        $this->abortIfNoProperties();
+
         if (! $this->resolveRepository() instanceof CacheForever) {
             return;
         }
+
+        // IF do this, data will be refetched from repository when the "all" method is called.
 
         self::$client->transaction(function ($multiExec) {
             $multiExec->del($this->key . ':forever');
             $multiExec->del($this->key . ':deleted');
         });
+    }
+
+    /**
+     * Throw a BadMethodCallException when required attributes are missing.
+     *
+     * @return void
+     *
+     * @throws \BadMethodCallException
+     */
+    protected function abortIfNoProperties()
+    {
+        if (! isset($this->key, $this->group, $this->table)) {
+            throw new BadMethodCallException('Missing required attributes. Try use table() or from() to build new instance.');
+        }
+    }
+
+    /**
+     * Format data before save.
+     *
+     * @param array $collect
+     * @param int $expire
+     * @param string $version
+     * @return array
+     */
+    protected function formatValues(array $collect, int $expire, string $version): array
+    {
+        $result = [];
+
+        foreach ($collect as $key => $item) {
+            $result[$key] = json_encode([
+                'value' => $item,
+                'expire' => $expire,
+                'version' => $version,
+            ], JSON_UNESCAPED_UNICODE);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Convert TTL seconds to expired timestamps.
+     *
+     * @param int $seconds
+     * @return int
+     */
+    protected function toExpiredTime(int $seconds): int
+    {
+        return time() + $seconds;
+    }
+
+    /**
+     * Get hash table key.
+     *
+     * @param string $group
+     * @param string $table
+     * @return string
+     */
+    protected function resolveKey(string $group, string $table): string
+    {
+        return self::$prefix . ':' . $table . ($group ? (':' . $group) : '');
     }
 
     /**
@@ -374,52 +446,6 @@ class RedisHash
         );
 
         return true;
-    }
-
-    /**
-     * Format data before save.
-     *
-     * @param array $collect
-     * @param int $expire
-     * @param string $version
-     * @return array
-     */
-    protected function formatValues(array $collect, int $expire, string $version): array
-    {
-        $result = [];
-
-        foreach ($collect as $key => $item) {
-            $result[$key] = json_encode([
-                'value' => $item,
-                'expire' => $expire,
-                'version' => $version,
-            ], JSON_UNESCAPED_UNICODE);
-        }
-
-        return $result;
-    }
-
-    /**
-     * Convert TTL seconds to expired timestamps.
-     *
-     * @param int $seconds
-     * @return int
-     */
-    protected function toExpiredTime(int $seconds): int
-    {
-        return time() + $seconds;
-    }
-
-    /**
-     * Get hash table key.
-     *
-     * @param string $group
-     * @param string $table
-     * @return string
-     */
-    private function resolveKey(string $group, string $table): string
-    {
-        return self::$prefix . ':' . $table . ($group ? (':' . $group) : '');
     }
 
     /**
