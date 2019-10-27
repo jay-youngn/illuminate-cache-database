@@ -17,10 +17,18 @@
         "illuminate/support": "^5.1",
         "predis/predis": "~1.1"
     },
+    "require-dev": {
+        "phpunit/phpunit": "^7.5"
+    },
     "autoload": {
         "psr-4": {
             "Zeigo\\Illuminate\\CacheDatabase\\": "src/"
         }
+    },
+    "autoload-dev": {
+        "classmap": [
+            "tests/"
+        ]
     },
     "extra": {
         "laravel": {
