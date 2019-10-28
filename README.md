@@ -81,6 +81,7 @@ class Users implements RedisHashRepository
         return '1.0';
     }
 
+    /** TTL (seconds). */
     public function ttl(): int
     {
         return 60;
