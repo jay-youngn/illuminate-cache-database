@@ -91,6 +91,8 @@ class RedisHash
     public function register(string $table, $class)
     {
         self::$repositoryBindings[$table] = $class;
+
+        unset(self::$repositoryInstances[$table]);
     }
 
     /**
@@ -101,7 +103,9 @@ class RedisHash
      */
     public function fill(array $repositories): self
     {
-        self::$repositoryBindings = $repositories;
+        foreach ($repositories as $table => $class) {
+            $this->register($table, $class);
+        }
 
         return $this;
     }
@@ -259,7 +263,7 @@ class RedisHash
         $repository = $this->resolveRepository();
 
         if (! $repository instanceof CacheForever) {
-            throw new BadMethodCallException('You must implement Zeigo\Illuminate\CacheDatabase\Contracts\CacheForever before calling "all"');
+            throw new BadMethodCallException(get_class($repository) . ' must be implement Zeigo\Illuminate\CacheDatabase\Contracts\CacheForever before calling "all"');
         }
 
         if (self::$client->get($this->key . ':forever')) {
@@ -268,7 +272,6 @@ class RedisHash
             if (! empty($deletedIds)) {
                 // refetch && save
                 $this->fetch($repository, $deletedIds, true);
-                self::$client->srem($this->key . ':deleted', $deletedIds);
             }
 
             return array_map(function ($item) {
@@ -306,10 +309,14 @@ class RedisHash
             $ids = [$ids];
         }
 
-        self::$client->transaction(function ($multiExec) use ($ids) {
-            $multiExec->hdel($this->key, $ids);
-            $multiExec->sadd($this->key . ':deleted', $ids);
-        });
+        if ($this->resolveRepository() instanceof CacheForever) {
+            self::$client->transaction(function ($multiExec) use ($ids) {
+                $multiExec->hdel($this->key, $ids);
+                $multiExec->sadd($this->key . ':deleted', $ids);
+            });
+        } else {
+            self::$client->hdel($this->key, $ids);
+        }
     }
 
     /**
@@ -443,14 +450,21 @@ class RedisHash
             return false;
         }
 
-        self::$client->hmset(
-            $this->key,
-            $this->formatValues(
-                $data,
-                $this->toExpiredTime($repository->ttl()),
-                $repository->version()
-            )
+        $data = $this->formatValues(
+            $data,
+            $this->toExpiredTime($repository->ttl()),
+            $repository->version()
         );
+
+        if ($repository instanceof CacheForever) {
+            // Remove item from deleted sets when saving newest.
+            self::$client->transaction(function ($multiExec) use ($data) {
+                $multiExec->hmset($this->key, $data);
+                $multiExec->srem($this->key . ':deleted', array_keys($data));
+            });
+        } else {
+            self::$client->hmset($this->key, $data);
+        }
 
         return true;
     }
