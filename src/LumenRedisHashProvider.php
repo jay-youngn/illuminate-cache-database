@@ -10,6 +10,7 @@ class LumenRedisHashProvider extends RedisHashProvider
     public function boot()
     {
         $this->app->configure('hash-database');
+
         $this->mergeConfigFrom(__DIR__ . '/Resources/hash-database.php', 'hash-database');
     }
 

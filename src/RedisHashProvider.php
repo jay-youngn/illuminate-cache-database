@@ -15,6 +15,8 @@ class RedisHashProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/Resources/hash-database.php' => config_path('hash-database.php'),
         ], 'config');
+
+        $this->mergeConfigFrom(__DIR__ . '/Resources/hash-database.php', 'hash-database');
     }
 
     /**
