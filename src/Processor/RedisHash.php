@@ -129,7 +129,7 @@ class RedisHash
     }
 
     /**
-     * Initialize a new instance for query.
+     * Build a new instance for query.
      *
      * @param string $group
      * @param string $table
@@ -153,11 +153,18 @@ class RedisHash
         // todo
         // It's strange, I know.
         // ╮(╯_╰)╭
-        return clone $this;
+        $newInstance = clone $this;
+
+        // Do not keep modified properties in singleton.
+        $this->group = null;
+        $this->table = null;
+        $this->key = null;
+
+        return $newInstance;
     }
 
     /**
-     * Initialize a new instance for non group query.
+     * Build a new instance for non group query.
      *
      * @param string $table
      * @return static (cloned)
@@ -474,14 +481,6 @@ class RedisHash
     public function version(): string
     {
         return static::VERSION;
-    }
-
-    public function __clone()
-    {
-        // do not keep modified properties.
-        $this->key = null;
-        $this->group = null;
-        $this->table = null;
     }
 
     public function __toString()
