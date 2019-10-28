@@ -72,7 +72,7 @@ class RedisHash
     /**
      * __construct
      *
-     * @param Predis\ClientInterface $client
+     * @param \Predis\ClientInterface $client
      * @param string $prefix
      */
     public function __construct(ClientInterface $client, string $prefix)
@@ -139,7 +139,7 @@ class RedisHash
      * @param string $table
      * @return static (cloned)
      *
-     * @throws BadMethodCallException
+     * @throws \BadMethodCallException
      */
     public function from(string $group, string $table): self
     {
@@ -148,14 +148,14 @@ class RedisHash
         }
 
         // For compatibility.
-        // Require a value even if not use group.
+        // Require a non-null value even if not use group.
         $this->group = $group;
         $this->table = $table;
 
         $this->key = $this->resolveKey($group, $table);
 
         // todo
-        // It's strange, I know.
+        // It's strange.
         // ╮(╯_╰)╭
         $newInstance = clone $this;
 
@@ -173,7 +173,7 @@ class RedisHash
      * @param string $table
      * @return static (cloned)
      *
-     * @throws BadMethodCallException
+     * @throws \BadMethodCallException
      */
     public function table(string $table): self
     {
@@ -193,7 +193,7 @@ class RedisHash
     }
 
     /**
-     * Find multiple datas by their ids.
+     * Find datas by multiple ids.
      *
      * @param array $ids
      * @return array
@@ -210,40 +210,44 @@ class RedisHash
 
         /**
          * Data repository.
+         *
          * @var RedisHashRepository
          */
         $repository = $this->resolveRepository();
 
-        $values = self::$client->hmget($this->key, $ids);
+        // Current component & repository version tag.
+        $version = $this->resolveVersionTag($repository);
 
-        // timestamp for determine expired data.
+        // Timestamp for determine expired data.
         $time = time();
 
-        // those data needs fetch newest.
-        $needFetch = [];
+        // Those data needs refetch.
+        $needRefetch = [];
 
-        // be used for ordered returns.
+        // Be used for pluck 'HMGET' returns.
         $i = 0;
+
+        $values = self::$client->hmget($this->key, $ids);
 
         foreach ($ids as $id) {
             if (
                 ! empty($values[$i])
                 && ($data = json_decode($values[$i], true))
                 && ! empty($data['value'])
-                && (! empty($data['version']) && $data['version'] === $repository->version())
+                && (! empty($data['version']) && $data['version'] === $version)
                 && (empty($data['expire']) || $data['expire'] > $time)
             ) {
                 $result[$id] = $data['value'];
             } else {
-                $needFetch[] = $id;
+                $needRefetch[] = $id;
                 $result[$id] = null;
             }
 
             $i += 1;
         }
 
-        if (! empty($needFetch)) {
-            foreach ($this->fetch($repository, $needFetch) as $k => $v) {
+        if (! empty($needRefetch)) {
+            foreach ($this->fetch($repository, $needRefetch) as $k => $v) {
                 $result[$k] = $v;
             }
         }
@@ -263,14 +267,14 @@ class RedisHash
         $repository = $this->resolveRepository();
 
         if (! $repository instanceof CacheForever) {
-            throw new BadMethodCallException(get_class($repository) . ' must be implement Zeigo\Illuminate\CacheDatabase\Contracts\CacheForever before calling "all"');
+            throw new BadMethodCallException(get_class($repository).' must be implement Zeigo\Illuminate\CacheDatabase\Contracts\CacheForever before calling "all"');
         }
 
-        if (self::$client->get($this->key . ':forever')) {
-            $deletedIds = self::$client->smembers($this->key . ':deleted');
+        if (self::$client->exists($this->key.':forever')) {
+            $deletedIds = self::$client->smembers($this->key.':deleted');
 
             if (! empty($deletedIds)) {
-                // refetch && save
+                // Refetch and save.
                 $this->fetch($repository, $deletedIds, true);
             }
 
@@ -286,9 +290,9 @@ class RedisHash
             if ($repository->ttl()) {
                 // Let this tag expire 10 seconds early when repository has TTL.
                 // So that cached data is always timely.
-                self::$client->set($this->key . ':forever', time(), 'EX', max(1, $repository->ttl() - 10));
+                self::$client->set($this->key.':forever', time(), 'EX', max(1, $repository->ttl() - 10));
             } else {
-                self::$client->set($this->key . ':forever', time());
+                self::$client->set($this->key.':forever', time());
             }
         }
 
@@ -312,7 +316,7 @@ class RedisHash
         if ($this->resolveRepository() instanceof CacheForever) {
             self::$client->transaction(function ($multiExec) use ($ids) {
                 $multiExec->hdel($this->key, $ids);
-                $multiExec->sadd($this->key . ':deleted', $ids);
+                $multiExec->sadd($this->key.':deleted', $ids);
             });
         } else {
             self::$client->hdel($this->key, $ids);
@@ -329,8 +333,8 @@ class RedisHash
         $this->abortIfNoProperties();
 
         self::$client->transaction(function ($multiExec) {
-            $multiExec->del($this->key . ':forever');
-            $multiExec->del($this->key . ':deleted');
+            $multiExec->del($this->key.':forever');
+            $multiExec->del($this->key.':deleted');
             $multiExec->del($this->key);
         });
     }
@@ -349,11 +353,7 @@ class RedisHash
         }
 
         // IF do this, data will be refetched from repository when the "all" method is called.
-
-        self::$client->transaction(function ($multiExec) {
-            $multiExec->del($this->key . ':forever');
-            $multiExec->del($this->key . ':deleted');
-        });
+        self::$client->del($this->key.':forever');
     }
 
     /**
@@ -373,16 +373,19 @@ class RedisHash
     /**
      * Format data before save.
      *
-     * @param array $collect
-     * @param int $expire
-     * @param string $version
+     * @param RedisHashRepository $repository
+     * @param array $data
      * @return array
      */
-    protected function formatValues(array $collect, int $expire, string $version): array
+    protected function formatValues(RedisHashRepository $repository, array $data): array
     {
+        $expire = $this->toExpiredTime($repository->ttl());
+
+        $version = $this->resolveVersionTag($repository);
+
         $result = [];
 
-        foreach ($collect as $key => $item) {
+        foreach ($data as $key => $item) {
             $result[$key] = json_encode([
                 'value' => $item,
                 'expire' => $expire,
@@ -413,7 +416,7 @@ class RedisHash
      */
     protected function resolveKey(string $group, string $table): string
     {
-        return self::$prefix . ':' . $table . ($group ? (':' . $group) : '');
+        return self::$prefix.':'.$table.($group ? (':'.$group) : '');
     }
 
     /**
@@ -450,17 +453,13 @@ class RedisHash
             return false;
         }
 
-        $data = $this->formatValues(
-            $data,
-            $this->toExpiredTime($repository->ttl()),
-            $repository->version()
-        );
+        $data = $this->formatValues($repository, $data);
 
         if ($repository instanceof CacheForever) {
-            // Remove item from deleted sets when saving newest.
+            // Remove item from deleted sets when saving newest data.
             self::$client->transaction(function ($multiExec) use ($data) {
                 $multiExec->hmset($this->key, $data);
-                $multiExec->srem($this->key . ':deleted', array_keys($data));
+                $multiExec->srem($this->key.':deleted', array_keys($data));
             });
         } else {
             self::$client->hmset($this->key, $data);
@@ -488,6 +487,17 @@ class RedisHash
     }
 
     /**
+     * Get version tag for component and repository.
+     *
+     * @param RedisHashRepository $repository
+     * @return string
+     */
+    private function resolveVersionTag(RedisHashRepository $repository): string
+    {
+        return $this->version().'@'.$repository->version();
+    }
+
+    /**
      * Show component version.
      *
      * @return string
@@ -499,7 +509,6 @@ class RedisHash
 
     public function __toString()
     {
-        // dump simple info.
         return json_encode([
             'version' => $this->version(),
             'repositories' => array_keys($this->getRepositories()),

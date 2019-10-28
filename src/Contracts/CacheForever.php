@@ -8,10 +8,10 @@ namespace Zeigo\Illuminate\CacheDatabase\Contracts;
 interface CacheForever
 {
     /**
-     * Get all data.
+     * Fetch all data from original storage.
      *
-     * @param   string|null  $group
-     * @return  array
+     * @param string|null $group
+     * @return array
      */
     public function all(string $group = null): array;
 }

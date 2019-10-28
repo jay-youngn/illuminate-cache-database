@@ -19,7 +19,7 @@ use Zeigo\Illuminate\CacheDatabase\Processor\RedisHash;
  * @method static void clear()
  * @method static void clearForeverTag()
  *
- * @see Zeigo\Illuminate\CacheDatabase\Processor\RedisHash
+ * @see \Zeigo\Illuminate\CacheDatabase\Processor\RedisHash
  */
 class RedisHashQuery extends Facade
 {

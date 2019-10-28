@@ -5,25 +5,25 @@ namespace Zeigo\Illuminate\CacheDatabase\Contracts;
 interface RedisHashRepository
 {
     /**
-     * Revised version.
+     * Get version of latest modified, the cached data will be marked with that.
      *
-     * @return  string
+     * @return string
      */
     public function version(): string;
 
     /**
-     * Get data.
+     * Fetch data from original storage by multiple ids.
      *
-     * @param   array  $ids
-     * @param   string|null  $group
-     * @return  array
+     * @param array $ids
+     * @param string|null $group
+     * @return array
      */
     public function fetch(array $ids, string $group = null): array;
 
     /**
      * TTL (seconds).
      *
-     * @return  int
+     * @return int
      */
     public function ttl(): int;
 }
