@@ -28,11 +28,11 @@ class RedisHash
     private $key;
 
     /**
-     * Data sharding.
+     * Data scope.
      *
      * @var string
      */
-    private $group;
+    private $scope;
 
     /**
      * Table name.
@@ -135,13 +135,13 @@ class RedisHash
     /**
      * Build a new instance for query.
      *
-     * @param string $group
+     * @param string $scope
      * @param string $table
      * @return static (cloned)
      *
      * @throws \BadMethodCallException
      */
-    public function from(string $group, string $table): self
+    public function from(string $scope, string $table): self
     {
         if (! $this->isRegistered($table)) {
             throw new BadMethodCallException("Repository {$table} is not registered");
@@ -149,10 +149,10 @@ class RedisHash
 
         // For compatibility.
         // Require a non-null value even if not use group.
-        $this->group = $group;
+        $this->scope = $scope;
         $this->table = $table;
 
-        $this->key = $this->resolveKey($group, $table);
+        $this->key = $this->resolveKey($scope, $table);
 
         // todo
         // It's strange.
@@ -160,7 +160,7 @@ class RedisHash
         $newInstance = clone $this;
 
         // Do not keep modified properties in singleton.
-        $this->group = null;
+        $this->scope = null;
         $this->table = null;
         $this->key = null;
 
@@ -284,7 +284,7 @@ class RedisHash
             }, self::$client->hgetall($this->key));
         }
 
-        $result = $repository->all($this->group);
+        $result = $repository->all($this->scope);
 
         if ($this->save($repository, $result)) {
             if ($repository->ttl()) {
@@ -365,7 +365,7 @@ class RedisHash
      */
     protected function abortIfNoProperties()
     {
-        if (! isset($this->key, $this->group, $this->table)) {
+        if (! isset($this->key, $this->scope, $this->table)) {
             throw new BadMethodCallException('Missing required attributes. Try use table() or from() to build new instance.');
         }
     }
@@ -410,13 +410,13 @@ class RedisHash
     /**
      * Get hash table key.
      *
-     * @param string $group
+     * @param string $scope
      * @param string $table
      * @return string
      */
-    protected function resolveKey(string $group, string $table): string
+    protected function resolveKey(string $scope, string $table): string
     {
-        return self::$prefix.':'.$table.($group ? (':'.$group) : '');
+        return self::$prefix.':'.$table.($scope ? (':'.$scope) : '');
     }
 
     /**
@@ -429,7 +429,7 @@ class RedisHash
      */
     private function fetch(RedisHashRepository $repository, array $ids, bool $save = true): array
     {
-        $result = $repository->fetch($ids, $this->group);
+        $result = $repository->fetch($ids, $this->scope);
 
         if (empty($result)) {
             return [];

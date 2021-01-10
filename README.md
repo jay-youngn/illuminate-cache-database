@@ -90,11 +90,12 @@ class Users implements RedisHashRepository
         return 60;
     }
 
-    public function fetch(array $ids, string $group = null): array
+    public function fetch(array $ids, string $scope = null): array
     {
-        // The group param is design for data sharding.
+        // The $scope param is design for data sharding.
         // Use or not is up to u.
-        $result = User::whereGroup($group)->find($ids, [
+        // User::{$scope}()->find($ids)
+        $result = User::whereType($scope)->find($ids, [
             'id',
             'username',
         ]);
@@ -143,8 +144,8 @@ RedisHashQuery::table('users')->get([1, 2, 3]);
     3 => null,
 ];
 
-// Data from redis hash table: "hash-database:users:someGroupTag"
-RedisHashQuery::from('someGroupTag', 'users')->find(9);
+// Data from redis hash table: "hash-database:users:scopeName"
+RedisHashQuery::from('scopeName', 'users')->find(9);
 [
     'id' => 9,
     'username' => '999',
